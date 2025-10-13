@@ -54,8 +54,8 @@ def main():
             print(f"{i}. {task.content}")
             print(f"   Priority: P{task.priority}")
             print(f"   Labels: {', '.join(task.labels) if task.labels else 'None'}")
-            if task.due and task.due.datetime:
-                print(f"   Due: {task.due.datetime}")
+            if task.due and hasattr(task.due, 'date'):
+                print(f"   Due: {task.due.date}")
             print()
 
         # Test task selection logic
