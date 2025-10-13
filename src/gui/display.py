@@ -35,72 +35,83 @@ class TaskDisplay:
             # Bind escape key to exit fullscreen
             self.root.bind('<Escape>', lambda e: self.root.attributes('-fullscreen', False))
 
-        # Configure background
-        self.root.configure(bg='#282828')
+        # Configure background - bright yellow/amber for attention
+        self.root.configure(bg='#FFD700')
 
-        # Create main container
-        self.main_frame = tk.Frame(self.root, bg='#282828')
-        self.main_frame.pack(expand=True, fill='both', padx=40, pady=40)
+        # Create main container with vertical centering
+        self.main_frame = tk.Frame(self.root, bg='#FFD700')
+        self.main_frame.pack(expand=True, fill='both')
 
-        # Task content label (main text)
+        # Spacer to push content to center
+        tk.Frame(self.main_frame, bg='#FFD700').pack(expand=True, fill='both')
+
+        # Task content label (main text) - large and centered with high contrast
+        # Use system font with emoji fallback
         self.task_label = tk.Label(
             self.main_frame,
             text="Loading tasks...",
-            font=('Helvetica', font_size, 'bold'),
-            bg='#282828',
-            fg='#EBDBB2',
-            wraplength=width - 80,
-            justify='left'
+            font=('DejaVu Sans', font_size * 2, 'bold'),
+            bg='#FFD700',
+            fg='#000000',
+            wraplength=width - 100,
+            justify='center'
         )
-        self.task_label.pack(pady=(0, 20))
+        self.task_label.pack(padx=50, pady=30)
 
-        # Task details frame
-        self.details_frame = tk.Frame(self.main_frame, bg='#282828')
-        self.details_frame.pack(fill='x', pady=(0, 20))
+        # Spacer to push metadata to bottom
+        tk.Frame(self.main_frame, bg='#FFD700').pack(expand=True, fill='both')
+
+        # Task details frame at bottom
+        self.details_frame = tk.Frame(self.main_frame, bg='#FFD700')
+        self.details_frame.pack(side='bottom', fill='x', padx=40, pady=30)
+
+        # Metadata container (due time and priority side by side)
+        self.metadata_frame = tk.Frame(self.details_frame, bg='#FFD700')
+        self.metadata_frame.pack()
 
         # Due time label
         self.time_label = tk.Label(
-            self.details_frame,
+            self.metadata_frame,
             text="",
-            font=('Helvetica', font_size - 6),
-            bg='#282828',
-            fg='#FABD2F',
-            justify='left'
+            font=('Helvetica', font_size - 10),
+            bg='#FFD700',
+            fg='#CC6600',
+            justify='center'
         )
-        self.time_label.pack(anchor='w')
+        self.time_label.pack(side='left', padx=10)
 
         # Priority label
         self.priority_label = tk.Label(
-            self.details_frame,
+            self.metadata_frame,
             text="",
-            font=('Helvetica', font_size - 6),
-            bg='#282828',
-            fg='#FB4934',
-            justify='left'
+            font=('Helvetica', font_size - 10),
+            bg='#FFD700',
+            fg='#CC0000',
+            justify='center'
         )
-        self.priority_label.pack(anchor='w', pady=(5, 0))
+        self.priority_label.pack(side='left', padx=10)
 
-        # Focus indicator
+        # Focus indicator (hidden by default)
         self.focus_label = tk.Label(
-            self.details_frame,
+            self.metadata_frame,
             text="",
-            font=('Helvetica', font_size - 6, 'italic'),
-            bg='#282828',
-            fg='#B8BB26',
-            justify='left'
+            font=('Helvetica', font_size - 10, 'italic'),
+            bg='#FFD700',
+            fg='#00AA00',
+            justify='center'
         )
-        self.focus_label.pack(anchor='w', pady=(5, 0))
+        self.focus_label.pack(side='left', padx=10)
 
         # Last updated timestamp
         self.update_label = tk.Label(
-            self.main_frame,
+            self.details_frame,
             text="",
-            font=('Helvetica', font_size - 10),
-            bg='#282828',
-            fg='#928374',
+            font=('Helvetica', font_size - 12),
+            bg='#FFD700',
+            fg='#666666',
             justify='center'
         )
-        self.update_label.pack(side='bottom', pady=(20, 0))
+        self.update_label.pack(pady=(10, 0))
 
         # Store current task
         self.current_task = None
@@ -119,27 +130,44 @@ class TaskDisplay:
 
         self.current_task = task_data
 
-        # Update task content
-        self.task_label.config(text=task_data['content'])
+        # Get background and text colors based on priority
+        bg_color, text_color, meta_color = self._get_background_colors(task_data['priority_level'])
 
-        # Update time
-        time_text = f"⏰ {task_data['due_time']}"
-        self.time_label.config(text=time_text)
+        # Update all background colors
+        self.root.configure(bg=bg_color)
+        self.main_frame.configure(bg=bg_color)
+        self.details_frame.configure(bg=bg_color)
+        self.metadata_frame.configure(bg=bg_color)
 
-        # Update priority with color coding
-        priority_text = f"📌 {task_data['priority']}"
-        priority_color = self._get_priority_color(task_data['priority_level'])
-        self.priority_label.config(text=priority_text, fg=priority_color)
+        # Update all widgets with new colors
+        self.task_label.config(
+            text=task_data['content'],
+            bg=bg_color,
+            fg=text_color
+        )
+
+        # Update spacers
+        for widget in self.main_frame.winfo_children():
+            if isinstance(widget, tk.Frame) and widget != self.details_frame:
+                widget.configure(bg=bg_color)
+
+        # Update time (simple text, no emoji)
+        time_text = task_data['due_time']
+        self.time_label.config(text=time_text, bg=bg_color, fg=meta_color)
+
+        # Update priority with color coding (simple text, no emoji)
+        priority_text = task_data['priority']
+        self.priority_label.config(text=priority_text, bg=bg_color, fg=meta_color)
 
         # Show focus indicator if applicable
         if task_data.get('has_focus', False):
-            self.focus_label.config(text="⭐ Focus Task")
+            self.focus_label.config(text="Focus Task", bg=bg_color, fg=meta_color)
         else:
-            self.focus_label.config(text="")
+            self.focus_label.config(text="", bg=bg_color)
 
         # Update timestamp
         now = datetime.now().strftime("%I:%M:%S %p")
-        self.update_label.config(text=f"Last updated: {now}")
+        self.update_label.config(text=f"Last updated: {now}", bg=bg_color, fg=meta_color)
 
     def show_no_tasks(self) -> None:
         """Display message when no tasks are available."""
@@ -166,9 +194,27 @@ class TaskDisplay:
         self.priority_label.config(text="")
         self.focus_label.config(text="")
 
+    def _get_background_colors(self, priority: int) -> tuple:
+        """
+        Get background, text, and metadata colors based on priority level.
+
+        Args:
+            priority: Priority level (1-4)
+
+        Returns:
+            Tuple of (background_color, text_color, metadata_color)
+        """
+        color_schemes = {
+            4: ('#FF4444', '#FFFFFF', '#FFE6E6'),  # Bright Red bg - Urgent!
+            3: ('#FFA500', '#000000', '#664200'),  # Orange bg - High
+            2: ('#4DA6FF', '#FFFFFF', '#E6F2FF'),  # Blue bg - Medium
+            1: ('#CCCCCC', '#000000', '#666666')   # Gray bg - Low
+        }
+        return color_schemes.get(priority, ('#FFD700', '#000000', '#666666'))
+
     def _get_priority_color(self, priority: int) -> str:
         """
-        Get color for priority level.
+        Get color for priority level (kept for compatibility).
 
         Args:
             priority: Priority level (1-4)
@@ -177,12 +223,12 @@ class TaskDisplay:
             Hex color code
         """
         colors = {
-            4: '#FB4934',  # Red - Urgent
-            3: '#FABD2F',  # Yellow - High
-            2: '#83A598',  # Blue - Medium
-            1: '#928374'   # Gray - Low
+            4: '#CC0000',  # Dark Red - Urgent
+            3: '#CC6600',  # Dark Orange - High
+            2: '#0066CC',  # Dark Blue - Medium
+            1: '#666666'   # Gray - Low
         }
-        return colors.get(priority, '#EBDBB2')
+        return colors.get(priority, '#000000')
 
     def set_refresh_callback(self, callback: Callable) -> None:
         """

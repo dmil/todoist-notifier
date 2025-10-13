@@ -74,14 +74,12 @@ class TaskSelector:
             priority = -task.priority if task.priority else 0
 
             # Due time: earlier is more important
+            # For tasks due on the same day, use task ID for consistent ordering
             due_time = float('inf')
-            if task.due and task.due.datetime:
-                # Parse datetime string
-                try:
-                    dt = datetime.fromisoformat(task.due.datetime.replace('Z', '+00:00'))
-                    due_time = dt.timestamp()
-                except (ValueError, AttributeError):
-                    pass
+            if task.due:
+                # If there's no specific time, all tasks on same day have same sort order
+                # We'll use task ID as tiebreaker for consistent ordering
+                due_time = hash(task.id)
 
             return (priority, due_time)
 
@@ -99,12 +97,9 @@ class TaskSelector:
         """
         # Format due time if available
         due_time_str = "No time set"
-        if task.due and task.due.datetime:
-            try:
-                dt = datetime.fromisoformat(task.due.datetime.replace('Z', '+00:00'))
-                due_time_str = dt.strftime("%I:%M %p")
-            except (ValueError, AttributeError):
-                pass
+        if task.due and hasattr(task.due, 'date'):
+            # Just show the date for now, as Todoist tasks may not have specific times
+            due_time_str = "Today"
 
         # Priority indicator
         priority_text = {

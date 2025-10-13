@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  todoist-notifier:
+    build: .
+    container_name: todoist-notifier
+    environment:
+      # X11 display forwarding for GUI (macOS with XQuartz)
+      - DISPLAY=host.docker.internal:0
+      # Load environment variables from .env file
+      - TODOIST_API_TOKEN=${TODOIST_API_TOKEN}
+      # Use host's timezone
+      - TZ=America/New_York
+    volumes:
+      # Mount current directory for live code updates during development
+      - .:/app
+      # Mount X11 socket for GUI display (macOS XQuartz)
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      # Mount host timezone data
+      - /etc/localtime:/etc/localtime:ro
+    ports:
+      # Expose webhook port (using 5001 to avoid macOS Control Center conflict)
+      - "5001:5000"
+    extra_hosts:
+      # Allow container to connect to host's X11 server
+      - "host.docker.internal:host-gateway"
+    network_mode: bridge
+    restart: unless-stopped

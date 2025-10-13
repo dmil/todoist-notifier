@@ -61,9 +61,29 @@ To get your Todoist API token:
 
 ### Running the Application
 
+**Option 1: Direct Python (Raspberry Pi / Linux)**
 ```bash
 python3 main.py
 ```
+
+**Option 2: Docker (recommended for testing on macOS/Windows)**
+```bash
+# Build and run with docker-compose
+docker-compose up --build
+
+# Or run in detached mode
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# Stop the container
+docker-compose down
+```
+
+Note: Docker is particularly useful for testing on macOS where Tkinter has compatibility issues. The container simulates the Linux environment of the Raspberry Pi.
+
+**For macOS users**: To see the GUI in Docker, you'll need to set up X11 forwarding with XQuartz. See [DOCKER_SETUP.md](DOCKER_SETUP.md) for detailed instructions.
 
 ### Configuration Options
 

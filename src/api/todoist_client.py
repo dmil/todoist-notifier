@@ -42,8 +42,15 @@ class TodoistClient:
             # Get all active tasks (returns a paginator in newer API versions)
             all_tasks_paginator = self.api.get_tasks()
 
-            # Convert to list if it's a paginator
-            all_tasks = list(all_tasks_paginator)
+            # Convert paginator to flat list (paginator returns list of tasks per page)
+            all_tasks = []
+            for page in all_tasks_paginator:
+                # Each page is a list of tasks
+                if isinstance(page, list):
+                    all_tasks.extend(page)
+                else:
+                    # In case the API changes and returns individual tasks
+                    all_tasks.append(page)
 
             # Filter for today's tasks
             today = date.today().isoformat()
@@ -57,6 +64,9 @@ class TodoistClient:
                 # due might be a string (date only) or have a datetime
                 if hasattr(task.due, 'date'):
                     task_date = task.due.date
+                    # Convert date object to string for comparison
+                    if not isinstance(task_date, str):
+                        task_date = task_date.isoformat()
                 else:
                     # If it's just a string
                     task_date = str(task.due)
