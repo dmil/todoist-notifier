@@ -46,11 +46,11 @@ class TaskDisplay:
         tk.Frame(self.main_frame, bg='#FFD700').pack(expand=True, fill='both')
 
         # Task content label (main text) - large and centered with high contrast
-        # Use system font with emoji fallback
+        # Use Noto Color Emoji font for emoji support
         self.task_label = tk.Label(
             self.main_frame,
             text="Loading tasks...",
-            font=('DejaVu Sans', font_size * 2, 'bold'),
+            font=('Noto Color Emoji', font_size * 2, 'bold'),
             bg='#FFD700',
             fg='#000000',
             wraplength=width - 100,
