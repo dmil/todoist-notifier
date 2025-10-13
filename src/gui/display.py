@@ -74,7 +74,7 @@ class TaskDisplay:
         self.time_label = tk.Label(
             self.metadata_frame,
             text="",
-            font=('Helvetica', font_size - 10),
+            font=('Helvetica', int(font_size * 0.7), 'bold'),
             bg='#FFD700',
             fg='#CC6600',
             justify='center'
@@ -85,7 +85,7 @@ class TaskDisplay:
         self.priority_label = tk.Label(
             self.metadata_frame,
             text="",
-            font=('Helvetica', font_size - 10),
+            font=('Helvetica', int(font_size * 0.7), 'bold'),
             bg='#FFD700',
             fg='#CC0000',
             justify='center'
@@ -96,7 +96,7 @@ class TaskDisplay:
         self.focus_label = tk.Label(
             self.metadata_frame,
             text="",
-            font=('Helvetica', font_size - 10, 'italic'),
+            font=('Helvetica', int(font_size * 0.7), 'bold italic'),
             bg='#FFD700',
             fg='#00AA00',
             justify='center'
@@ -107,7 +107,7 @@ class TaskDisplay:
         self.update_label = tk.Label(
             self.details_frame,
             text="",
-            font=('Helvetica', font_size - 12),
+            font=('Helvetica', int(font_size * 0.5)),
             bg='#FFD700',
             fg='#666666',
             justify='center'
