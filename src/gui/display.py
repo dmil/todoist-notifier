@@ -54,17 +54,17 @@ class TaskDisplay:
             font=('Noto Sans', font_size * 2, 'bold'),
             bg='#FFD700',
             fg='#000000',
-            wraplength=width - 100,
+            wraplength=width - 40,
             justify='center'
         )
-        self.task_label.pack(padx=50, pady=30)
+        self.task_label.pack(padx=20, pady=20)
 
         # Spacer to push metadata to bottom
         tk.Frame(self.main_frame, bg='#FFD700').pack(expand=True, fill='both')
 
         # Task details frame at bottom
         self.details_frame = tk.Frame(self.main_frame, bg='#FFD700')
-        self.details_frame.pack(side='bottom', fill='x', padx=40, pady=30)
+        self.details_frame.pack(side='bottom', fill='x', padx=20, pady=20)
 
         # Metadata container (due time and priority side by side)
         self.metadata_frame = tk.Frame(self.details_frame, bg='#FFD700')
