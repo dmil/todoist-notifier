@@ -1,0 +1,16 @@
+[Unit]
+Description=Todoist Notifier Display
+After=network.target graphical.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/todoist-notifier
+Environment="DISPLAY=:0"
+Environment="XAUTHORITY=/home/pi/.Xauthority"
+ExecStart=/home/pi/todoist-notifier/venv/bin/python3 /home/pi/todoist-notifier/main.py
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=graphical.target
