@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Todoist Notifier - Main Application Entry Point
+TickTick Notifier - Main Application Entry Point
 
-Displays the most important Todoist task on a Raspberry Pi screen.
+Displays the most important TickTick task on a Raspberry Pi screen.
 """
 import sys
 import signal
@@ -12,17 +12,17 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent / 'src'))
 
 from config import Config
-from api.todoist_client import TodoistClient
+from api.ticktick_client import TickTickClient
 from logic.task_selector import TaskSelector
 from gui.display import TaskDisplay
 from webhook.server import WebhookServer
 
 
-class TodoistNotifier:
+class TickTickNotifier:
     """Main application controller."""
 
     def __init__(self):
-        """Initialize the Todoist Notifier application."""
+        """Initialize the TickTick Notifier application."""
         # Load configuration
         self.config = Config()
 
@@ -30,7 +30,7 @@ class TodoistNotifier:
             raise ValueError("Invalid configuration. Please check your settings.")
 
         # Initialize components
-        self.todoist = TodoistClient(self.config.get('todoist.api_token'))
+        self.ticktick = TickTickClient(self.config.get('ticktick.api_token'))
         self.selector = TaskSelector(self.config.get('focus_tag'))
 
         # Initialize GUI
@@ -58,12 +58,12 @@ class TodoistNotifier:
         """
         Refresh and update the displayed task.
 
-        This fetches the latest tasks from Todoist, selects the most important one,
+        This fetches the latest tasks from TickTick, selects the most important one,
         and updates the display.
         """
         try:
             # Fetch today's tasks
-            tasks = self.todoist.get_today_tasks(force_refresh=True)
+            tasks = self.ticktick.get_today_tasks(force_refresh=True)
 
             # Select the most important task
             selected_task = self.selector.select_most_important_task(tasks)
@@ -82,7 +82,7 @@ class TodoistNotifier:
 
     def start(self) -> None:
         """Start the application."""
-        print("Starting Todoist Notifier...")
+        print("Starting TickTick Notifier...")
         print(f"Configuration: {self.config}")
 
         # Start webhook server if enabled
@@ -108,7 +108,7 @@ class TodoistNotifier:
 
     def stop(self) -> None:
         """Stop the application gracefully."""
-        print("\nStopping Todoist Notifier...")
+        print("\nStopping TickTick Notifier...")
 
         if self.webhook:
             self.webhook.stop()
@@ -126,7 +126,7 @@ def main():
     """Main entry point."""
     try:
         # Create and start the application
-        app = TodoistNotifier()
+        app = TickTickNotifier()
         app.start()
 
     except KeyboardInterrupt:
@@ -134,7 +134,7 @@ def main():
     except ValueError as e:
         print(f"Configuration Error: {e}")
         print("\nTo set up your configuration:")
-        print("1. Copy .env.example to .env and add your Todoist API token")
+        print("1. Copy .env.example to .env and add your TickTick API token")
         sys.exit(1)
     except Exception as e:
         print(f"Fatal Error: {e}")

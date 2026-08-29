@@ -1,5 +1,5 @@
 """
-Configuration management for the Todoist Notifier application.
+Configuration management for the TickTick Notifier application.
 """
 import os
 from typing import Any
@@ -16,8 +16,8 @@ class Config:
 
         # Build configuration from environment variables with sensible defaults
         self._config = {
-            'todoist': {
-                'api_token': os.getenv('TODOIST_API_TOKEN', '')
+            'ticktick': {
+                'api_token': os.getenv('TICKTICK_API_KEY', '')
             },
             'display': {
                 'width': int(os.getenv('DISPLAY_WIDTH', 800)),
@@ -27,7 +27,7 @@ class Config:
                 'refresh_interval': int(os.getenv('REFRESH_INTERVAL', 300))  # seconds
             },
             'webhook': {
-                'enabled': os.getenv('WEBHOOK_ENABLED', 'true').lower() == 'true',
+                'enabled': os.getenv('WEBHOOK_ENABLED', 'false').lower() == 'true',
                 'port': int(os.getenv('WEBHOOK_PORT', 5000)),
                 'host': os.getenv('WEBHOOK_HOST', '0.0.0.0')
             },
@@ -83,10 +83,10 @@ class Config:
             True if configuration is valid
         """
         # Check for required API token
-        api_token = self.get('todoist.api_token')
+        api_token = self.get('ticktick.api_token')
         if not api_token:
-            print("ERROR: Todoist API token not configured!")
-            print("Set TODOIST_API_TOKEN in your .env file")
+            print("ERROR: TickTick API token not configured!")
+            print("Set TICKTICK_API_KEY in your .env file")
             return False
 
         return True
@@ -99,8 +99,8 @@ class Config:
             'display': self._config['display'],
             'webhook': self._config['webhook'],
             'focus_tag': self._config['focus_tag'],
-            'todoist': {
-                'api_token': '***' if self._config['todoist']['api_token'] else 'NOT SET'
+            'ticktick': {
+                'api_token': '***' if self._config['ticktick']['api_token'] else 'NOT SET'
             }
         }
         return json.dumps(safe_config, indent=2)

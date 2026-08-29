@@ -1,5 +1,5 @@
 [Unit]
-Description=Todoist Notifier Display
+Description=TickTick Notifier Display
 After=network.target graphical.target
 
 [Service]

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Test script to verify Todoist API connection and task selection logic.
+Test script to verify TickTick API connection and task selection logic.
 """
 import sys
 from pathlib import Path
@@ -9,17 +9,17 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent / 'src'))
 
 from config import Config
-from api.todoist_client import TodoistClient
+from api.ticktick_client import TickTickClient
 from logic.task_selector import TaskSelector
 
-# Todoist stores priority inverted: 4 is P1 (urgent), 1 is P4 (low)
+# Internal priority scale: 4 is P1 (urgent), 1 is P4 (low)
 PRIORITY_LABELS = {4: "P1 (Urgent)", 3: "P2 (High)", 2: "P3 (Medium)", 1: "P4 (Low)"}
 
 
 def main():
-    """Test the Todoist API and task selection."""
+    """Test the TickTick API and task selection."""
     print("="*60)
-    print("Todoist Notifier - API Test")
+    print("TickTick Notifier - API Test")
     print("="*60)
 
     # Load configuration
@@ -32,23 +32,23 @@ def main():
 
     print(f"Configuration loaded:\n{config}")
 
-    # Initialize Todoist client
+    # Initialize TickTick client
     print("\n" + "="*60)
-    print("Testing Todoist API connection...")
+    print("Testing TickTick API connection...")
     print("="*60)
 
     try:
-        todoist = TodoistClient(config.get('todoist.api_token'))
+        ticktick = TickTickClient(config.get('ticktick.api_token'))
 
         # Fetch today's tasks
         print("\nFetching today's tasks...")
-        tasks = todoist.get_today_tasks(force_refresh=True)
+        tasks = ticktick.get_today_tasks(force_refresh=True)
 
         print(f"Found {len(tasks)} task(s) due today:")
         print()
 
         if not tasks:
-            print("  No tasks due today! Add some tasks in Todoist with today's date.")
+            print("  No tasks due today! Add some tasks in TickTick with today's date.")
             print("  You can also add the '@focus' label to a task to test the focus feature.")
             return 0
 
@@ -57,8 +57,8 @@ def main():
             print(f"{i}. {task.content}")
             print(f"   Priority: {PRIORITY_LABELS.get(task.priority, 'No priority')}")
             print(f"   Labels: {', '.join(task.labels) if task.labels else 'None'}")
-            if task.due and hasattr(task.due, 'date'):
-                print(f"   Due: {task.due.date}")
+            if task.due:
+                print(f"   Due: {task.due.datetime or task.due.date}")
             print()
 
         # Test task selection logic
@@ -85,8 +85,6 @@ def main():
         print("\n" + "="*60)
         print("✓ All tests passed successfully!")
         print("="*60)
-        print("\nNote: GUI cannot be tested on this system due to Tkinter")
-        print("configuration issues with Python 3.12 and tcl-tk 9.0.")
         print("\nTo run the full app on Raspberry Pi:")
         print("  1. Copy this directory to your Raspberry Pi")
         print("  2. Set up .env with your API token")

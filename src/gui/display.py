@@ -27,7 +27,7 @@ class TaskDisplay:
 
         # Create main window
         self.root = tk.Tk()
-        self.root.title("Todoist Notifier")
+        self.root.title("TickTick Notifier")
         self.root.geometry(f"{width}x{height}")
 
         if fullscreen:

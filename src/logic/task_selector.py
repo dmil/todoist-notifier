@@ -2,7 +2,7 @@
 Task selection logic to determine the most important task to display.
 """
 from typing import Optional, List
-from todoist_api_python.models import Task
+from api.ticktick_client import Task
 from datetime import datetime
 
 
@@ -39,7 +39,7 @@ class TaskSelector:
         if focus_task:
             return focus_task
 
-        # Sort by priority (4 = highest, 1 = lowest in Todoist) and due time
+        # Sort by priority (4 = highest, 1 = lowest) and due time
         return self._select_by_priority_and_time(tasks)
 
     def _find_focus_task(self, tasks: List[Task]) -> Optional[Task]:

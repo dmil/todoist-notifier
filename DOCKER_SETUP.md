@@ -1,6 +1,6 @@
 # Docker Setup with X11 GUI Support (macOS)
 
-This guide will help you test the Todoist Notifier GUI on macOS using Docker with X11 forwarding.
+This guide will help you test the TickTick Notifier GUI on macOS using Docker with X11 forwarding.
 
 ## Prerequisites
 
@@ -66,7 +66,7 @@ ls -la /tmp/.X11-unix/
 ## Step 5: Run the Application
 
 ```bash
-# Make sure you have a .env file with your TODOIST_API_TOKEN
+# Make sure you have a .env file with your TICKTICK_API_KEY
 # Then build and run:
 docker-compose up --build
 ```
@@ -105,13 +105,14 @@ If X11 setup is too complex, consider testing the core logic without GUI:
 ```bash
 # Test the API and task selection logic directly in Python
 docker-compose exec todoist-notifier python3 -c "
-from src.api.todoist_client import TodoistClient
-from src.logic.task_selector import TaskSelector
+import sys; sys.path.insert(0, 'src')
+from api.ticktick_client import TickTickClient
+from logic.task_selector import TaskSelector
 import os
 
-client = TodoistClient(os.getenv('TODOIST_API_TOKEN'))
-selector = TaskSelector(client)
-task = selector.get_most_important_task()
+client = TickTickClient(os.getenv('TICKTICK_API_KEY'))
+selector = TaskSelector('@focus')
+task = selector.select_most_important_task(client.get_today_tasks())
 print(f'Most important task: {task}')
 "
 ```

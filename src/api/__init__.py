@@ -1,1 +1,1 @@
-# Todoist API Client Module
+# TickTick API Client Module
