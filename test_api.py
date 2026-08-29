@@ -12,6 +12,9 @@ from config import Config
 from api.todoist_client import TodoistClient
 from logic.task_selector import TaskSelector
 
+# Todoist stores priority inverted: 4 is P1 (urgent), 1 is P4 (low)
+PRIORITY_LABELS = {4: "P1 (Urgent)", 3: "P2 (High)", 2: "P3 (Medium)", 1: "P4 (Low)"}
+
 
 def main():
     """Test the Todoist API and task selection."""
@@ -52,7 +55,7 @@ def main():
         # Display all tasks
         for i, task in enumerate(tasks, 1):
             print(f"{i}. {task.content}")
-            print(f"   Priority: P{task.priority}")
+            print(f"   Priority: {PRIORITY_LABELS.get(task.priority, 'No priority')}")
             print(f"   Labels: {', '.join(task.labels) if task.labels else 'None'}")
             if task.due and hasattr(task.due, 'date'):
                 print(f"   Due: {task.due.date}")

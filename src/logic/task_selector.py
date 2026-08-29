@@ -73,17 +73,56 @@ class TaskSelector:
             # Priority: 4 (highest) to 1 (lowest), negate to sort descending
             priority = -task.priority if task.priority else 0
 
-            # Due time: earlier is more important
-            # For tasks due on the same day, use task ID for consistent ordering
-            due_time = float('inf')
-            if task.due:
-                # If there's no specific time, all tasks on same day have same sort order
-                # We'll use task ID as tiebreaker for consistent ordering
-                due_time = hash(task.id)
+            # Due time: earlier is more important. Tasks with no specific time
+            # sort after timed tasks; task ID breaks any remaining tie so the
+            # same task list always yields the same choice.
+            due_time = self._due_timestamp(task)
 
-            return (priority, due_time)
+            return (priority, due_time, str(task.id))
 
         return min(tasks, key=task_sort_key)
+
+    def _due_datetime(self, task: Task) -> Optional[datetime]:
+        """
+        Get the specific due datetime for a task, if it has one.
+
+        Args:
+            task: Task to inspect
+
+        Returns:
+            The due datetime, or None for date-only tasks
+        """
+        due = getattr(task, 'due', None)
+        if due is None:
+            return None
+
+        due_dt = getattr(due, 'datetime', None)
+        if due_dt is None:
+            return None
+
+        if isinstance(due_dt, str):
+            try:
+                return datetime.fromisoformat(due_dt.replace('Z', '+00:00'))
+            except ValueError:
+                return None
+
+        return due_dt
+
+    def _due_timestamp(self, task: Task) -> float:
+        """
+        Get a sortable due time for a task.
+
+        Args:
+            task: Task to inspect
+
+        Returns:
+            POSIX timestamp of the due time, or infinity if no time is set
+        """
+        due_dt = self._due_datetime(task)
+        if due_dt is None:
+            return float('inf')
+
+        return due_dt.timestamp()
 
     def format_task_for_display(self, task: Task) -> dict:
         """
@@ -97,8 +136,11 @@ class TaskSelector:
         """
         # Format due time if available
         due_time_str = "No time set"
-        if task.due and hasattr(task.due, 'date'):
-            # Just show the date for now, as Todoist tasks may not have specific times
+        due_dt = self._due_datetime(task)
+        if due_dt:
+            due_time_str = due_dt.strftime('%I:%M %p').lstrip('0')
+        elif task.due and hasattr(task.due, 'date'):
+            # Date-only task: no specific time to show
             due_time_str = "Today"
 
         # Priority indicator
