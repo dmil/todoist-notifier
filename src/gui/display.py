@@ -15,19 +15,23 @@ FONT_PREFERENCES = ('Noto Sans', 'DejaVu Sans', 'Liberation Sans', 'Helvetica')
 # background with a single saturated accent, rather than a fully flooded
 # screen, so the display stays readable for hours without glaring.
 THEMES = {
+    # Bright, saturated backgrounds with deep ink text. Every pairing clears
+    # a 4.6:1 contrast ratio, which is what keeps "bright" from turning into
+    # the glare of the original fully-saturated scheme.
+    'bright': {
+        'default': {'bg': '#8D99AE', 'accent': '#54637A', 'text': '#171C24', 'meta': '#27303F'},
+        4: {'bg': '#F25F5C', 'accent': '#B83833', 'text': '#2E1512', 'meta': '#451B17'},
+        3: {'bg': '#F5A93F', 'accent': '#B87613', 'text': '#2E1F08', 'meta': '#64400D'},
+        2: {'bg': '#3FA9D6', 'accent': '#19708F', 'text': '#0C2029', 'meta': '#0E394B'},
+        1: {'bg': '#9B8AC4', 'accent': '#5F4C93', 'text': '#1E1830', 'meta': '#2F244D'},
+    },
+    # Muted deep tones for a room that is dark at night
     'dark': {
         'default': {'bg': '#414750', 'accent': '#C9D2DD', 'text': '#F2F4F7', 'meta': '#BAC1CA'},
         4: {'bg': '#8A3A30', 'accent': '#FFB3A3', 'text': '#FFF1ED', 'meta': '#E8C0B6'},
         3: {'bg': '#8A6024', 'accent': '#FFD494', 'text': '#FFF7EC', 'meta': '#EBD3AC'},
         2: {'bg': '#2C5F94', 'accent': '#A8D0F5', 'text': '#F0F7FF', 'meta': '#BDD5EC'},
         1: {'bg': '#4A515C', 'accent': '#C9D2DD', 'text': '#F2F4F7', 'meta': '#BAC1CA'},
-    },
-    'light': {
-        'default': {'bg': '#E2E5E9', 'accent': '#5A6472', 'text': '#232830', 'meta': '#666E7A'},
-        4: {'bg': '#F6D9D4', 'accent': '#B23A2E', 'text': '#3A1D18', 'meta': '#8A5348'},
-        3: {'bg': '#F8E6C8', 'accent': '#A86C1A', 'text': '#3A2E18', 'meta': '#8A6A33'},
-        2: {'bg': '#D6E4F3', 'accent': '#2F5F9E', 'text': '#182838', 'meta': '#4E6B8A'},
-        1: {'bg': '#E2E5E9', 'accent': '#5A6472', 'text': '#232830', 'meta': '#666E7A'},
     },
 }
 
@@ -39,7 +43,7 @@ class TaskDisplay:
     """GUI display for showing the most important task."""
 
     def __init__(self, width: int = 800, height: int = 480, fullscreen: bool = False,
-                 font_size: int = 24, theme: str = 'dark'):
+                 font_size: int = 24, theme: str = 'bright'):
         """
         Initialize the task display.
 
@@ -48,13 +52,13 @@ class TaskDisplay:
             height: Window height in pixels
             fullscreen: Whether to run in fullscreen mode
             font_size: Base font size for task content
-            theme: Colour scheme to use ('dark' or 'light')
+            theme: Colour scheme to use ('bright' or 'dark')
         """
         self.width = width
         self.height = height
         self.fullscreen = fullscreen
         self.font_size = font_size
-        self.theme = THEMES.get(theme, THEMES['dark'])
+        self.theme = THEMES.get(theme, THEMES['bright'])
 
         # Create main window
         self.root = tk.Tk()
