@@ -24,7 +24,7 @@ class Config:
                 'height': int(os.getenv('DISPLAY_HEIGHT', 480)),
                 'fullscreen': os.getenv('DISPLAY_FULLSCREEN', 'false').lower() == 'true',
                 'font_size': int(os.getenv('DISPLAY_FONT_SIZE', 24)),
-                'theme': os.getenv('DISPLAY_THEME', 'bright').lower(),
+                'colour_opacity': float(os.getenv('DISPLAY_COLOR_OPACITY', 0.75)),
                 'refresh_interval': int(os.getenv('REFRESH_INTERVAL', 300))  # seconds
             },
             'webhook': {

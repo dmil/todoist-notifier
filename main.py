@@ -39,7 +39,7 @@ class TickTickNotifier:
             height=self.config.get('display.height'),
             fullscreen=self.config.get('display.fullscreen'),
             font_size=self.config.get('display.font_size'),
-            theme=self.config.get('display.theme')
+            colour_opacity=self.config.get('display.colour_opacity')
         )
 
         # Initialize webhook server if enabled

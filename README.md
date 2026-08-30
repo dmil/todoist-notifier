@@ -105,6 +105,7 @@ All configuration is done via environment variables in your `.env` file:
 - `DISPLAY_HEIGHT` - Screen height in pixels (default: 480)
 - `DISPLAY_FULLSCREEN` - Run fullscreen: true/false (default: false)
 - `DISPLAY_FONT_SIZE` - Base font size (default: 24)
+- `DISPLAY_COLOR_OPACITY` - Strength of the priority background colours, 0 to 1 (default: 0.75). 1 is the full-strength colour; lower values mix it towards white.
 - `REFRESH_INTERVAL` - Auto-refresh interval in seconds (default: 300)
 
 **Webhook Settings (optional):**
