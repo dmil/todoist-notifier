@@ -2,15 +2,44 @@
 Tkinter-based GUI for displaying the most important task on a small screen.
 """
 import tkinter as tk
+from tkinter import font as tkfont
 from typing import Optional, Callable
 from datetime import datetime
+
+# Preferred display faces, in descending order. The first one actually
+# installed wins; Raspberry Pi OS ships DejaVu Sans, and Noto Sans carries
+# the widest emoji coverage for task titles.
+FONT_PREFERENCES = ('Noto Sans', 'DejaVu Sans', 'Liberation Sans', 'Helvetica')
+
+# Colour schemes keyed by priority (4 = most urgent). Each entry is a calm
+# background with a single saturated accent, rather than a fully flooded
+# screen, so the display stays readable for hours without glaring.
+THEMES = {
+    'dark': {
+        'default': {'bg': '#414750', 'accent': '#C9D2DD', 'text': '#F2F4F7', 'meta': '#BAC1CA'},
+        4: {'bg': '#8A3A30', 'accent': '#FFB3A3', 'text': '#FFF1ED', 'meta': '#E8C0B6'},
+        3: {'bg': '#8A6024', 'accent': '#FFD494', 'text': '#FFF7EC', 'meta': '#EBD3AC'},
+        2: {'bg': '#2C5F94', 'accent': '#A8D0F5', 'text': '#F0F7FF', 'meta': '#BDD5EC'},
+        1: {'bg': '#4A515C', 'accent': '#C9D2DD', 'text': '#F2F4F7', 'meta': '#BAC1CA'},
+    },
+    'light': {
+        'default': {'bg': '#E2E5E9', 'accent': '#5A6472', 'text': '#232830', 'meta': '#666E7A'},
+        4: {'bg': '#F6D9D4', 'accent': '#B23A2E', 'text': '#3A1D18', 'meta': '#8A5348'},
+        3: {'bg': '#F8E6C8', 'accent': '#A86C1A', 'text': '#3A2E18', 'meta': '#8A6A33'},
+        2: {'bg': '#D6E4F3', 'accent': '#2F5F9E', 'text': '#182838', 'meta': '#4E6B8A'},
+        1: {'bg': '#E2E5E9', 'accent': '#5A6472', 'text': '#232830', 'meta': '#666E7A'},
+    },
+}
+
+# Priority names shown in the metadata line
+PRIORITY_NAMES = {4: 'Urgent', 3: 'High', 2: 'Medium', 1: 'Low'}
 
 
 class TaskDisplay:
     """GUI display for showing the most important task."""
 
     def __init__(self, width: int = 800, height: int = 480, fullscreen: bool = False,
-                 font_size: int = 24):
+                 font_size: int = 24, theme: str = 'dark'):
         """
         Initialize the task display.
 
@@ -19,11 +48,13 @@ class TaskDisplay:
             height: Window height in pixels
             fullscreen: Whether to run in fullscreen mode
             font_size: Base font size for task content
+            theme: Colour scheme to use ('dark' or 'light')
         """
         self.width = width
         self.height = height
         self.fullscreen = fullscreen
         self.font_size = font_size
+        self.theme = THEMES.get(theme, THEMES['dark'])
 
         # Create main window
         self.root = tk.Tk()
@@ -35,87 +66,101 @@ class TaskDisplay:
             # Bind escape key to exit fullscreen
             self.root.bind('<Escape>', lambda e: self.root.attributes('-fullscreen', False))
 
-        # Configure background - bright yellow/amber for attention
-        self.root.configure(bg='#FFD700')
+        self.family = self._pick_font_family()
+        scheme = self.theme['default']
+        self.root.configure(bg=scheme['bg'])
 
-        # Create main container with vertical centering
-        self.main_frame = tk.Frame(self.root, bg='#FFD700')
+        # Accent bar: carries the priority colour so the background does not
+        # have to, keeping the screen calm while staying readable at a glance.
+        self.accent_bar = tk.Frame(self.root, bg=scheme['accent'],
+                                   height=max(14, int(font_size * 0.6)))
+        self.accent_bar.pack(fill='x', side='top')
+        self.accent_bar.pack_propagate(False)
+
+        # Main container, vertically centred
+        self.main_frame = tk.Frame(self.root, bg=scheme['bg'])
         self.main_frame.pack(expand=True, fill='both')
 
-        # Spacer to push content to center
-        tk.Frame(self.main_frame, bg='#FFD700').pack(expand=True, fill='both')
+        # Spacer above the title
+        self.top_spacer = tk.Frame(self.main_frame, bg=scheme['bg'])
+        self.top_spacer.pack(expand=True, fill='both')
 
-        # Task content label (main text) - large and centered with high contrast
-        # Try multiple fonts for better emoji + text support
-        # Tkinter will use the first available font
+        # Task title: the one thing readable from across the room
         self.task_label = tk.Label(
             self.main_frame,
             text="Loading tasks...",
-            font=('Noto Sans', font_size * 2, 'bold'),
-            bg='#FFD700',
-            fg='#000000',
-            wraplength=width - 40,
-            justify='center'
+            font=(self.family, int(font_size * 1.9), 'bold'),
+            bg=scheme['bg'],
+            fg=scheme['text'],
+            wraplength=width - int(width * 0.14),
+            justify='center',
         )
-        self.task_label.pack(padx=20, pady=20)
+        self.task_label.pack(padx=int(width * 0.07))
 
-        # Spacer to push metadata to bottom
-        tk.Frame(self.main_frame, bg='#FFD700').pack(expand=True, fill='both')
-
-        # Task details frame at bottom
-        self.details_frame = tk.Frame(self.main_frame, bg='#FFD700')
-        self.details_frame.pack(side='bottom', fill='x', padx=20, pady=20)
-
-        # Metadata container (due time and priority side by side)
-        self.metadata_frame = tk.Frame(self.details_frame, bg='#FFD700')
-        self.metadata_frame.pack()
-
-        # Due time label
-        self.time_label = tk.Label(
-            self.metadata_frame,
+        # Metadata line: due time, priority and focus marker on one row
+        self.meta_label = tk.Label(
+            self.main_frame,
             text="",
-            font=('Helvetica', int(font_size * 0.7), 'bold'),
-            bg='#FFD700',
-            fg='#CC6600',
-            justify='center'
+            font=(self.family, int(font_size * 0.62)),
+            bg=scheme['bg'],
+            fg=scheme['meta'],
+            justify='center',
         )
-        self.time_label.pack(side='left', padx=10)
+        self.meta_label.pack(pady=(int(font_size * 0.9), 0))
 
-        # Priority label
-        self.priority_label = tk.Label(
-            self.metadata_frame,
-            text="",
-            font=('Helvetica', int(font_size * 0.7), 'bold'),
-            bg='#FFD700',
-            fg='#CC0000',
-            justify='center'
-        )
-        self.priority_label.pack(side='left', padx=10)
+        # Spacer below the metadata
+        self.bottom_spacer = tk.Frame(self.main_frame, bg=scheme['bg'])
+        self.bottom_spacer.pack(expand=True, fill='both')
 
-        # Focus indicator (hidden by default)
-        self.focus_label = tk.Label(
-            self.metadata_frame,
-            text="",
-            font=('Helvetica', int(font_size * 0.7), 'bold italic'),
-            bg='#FFD700',
-            fg='#00AA00',
-            justify='center'
-        )
-        self.focus_label.pack(side='left', padx=10)
-
-        # Last updated timestamp
+        # Footer timestamp, deliberately quiet
         self.update_label = tk.Label(
-            self.details_frame,
+            self.root,
             text="",
-            font=('Helvetica', int(font_size * 0.5)),
-            bg='#FFD700',
-            fg='#666666',
-            justify='center'
+            font=(self.family, max(8, int(font_size * 0.42))),
+            bg=scheme['bg'],
+            fg=scheme['meta'],
+            justify='center',
         )
-        self.update_label.pack(pady=(10, 0))
+        self.update_label.pack(side='bottom', pady=(0, int(font_size * 0.7)))
 
         # Store current task
         self.current_task = None
+
+    def _pick_font_family(self) -> str:
+        """
+        Choose the best available display font.
+
+        Returns:
+            Name of an installed font family
+        """
+        available = set(tkfont.families(self.root))
+        for family in FONT_PREFERENCES:
+            if family in available:
+                return family
+
+        return 'TkDefaultFont'
+
+    def _apply_scheme(self, scheme: dict) -> None:
+        """
+        Repaint every widget in the given colour scheme.
+
+        Args:
+            scheme: Mapping of bg/accent/text/meta colours
+        """
+        self.root.configure(bg=scheme['bg'])
+        self.accent_bar.configure(bg=scheme['accent'])
+
+        for frame in (self.main_frame, self.top_spacer, self.bottom_spacer):
+            frame.configure(bg=scheme['bg'])
+
+        self.task_label.configure(bg=scheme['bg'], fg=scheme['text'])
+        self.meta_label.configure(bg=scheme['bg'], fg=scheme['meta'])
+        self.update_label.configure(bg=scheme['bg'], fg=scheme['meta'])
+
+    def _stamp_update_time(self) -> None:
+        """Refresh the footer timestamp."""
+        now = datetime.now().strftime("%I:%M %p").lstrip('0').lower()
+        self.update_label.config(text=f"Updated {now}")
 
     def update_task(self, task_data: Optional[dict]) -> None:
         """
@@ -131,54 +176,32 @@ class TaskDisplay:
 
         self.current_task = task_data
 
-        # Get background and text colors based on priority
-        bg_color, text_color, meta_color = self._get_background_colors(task_data['priority_level'])
+        priority = task_data.get('priority_level')
+        scheme = self.theme.get(priority, self.theme['default'])
+        self._apply_scheme(scheme)
 
-        # Update all background colors
-        self.root.configure(bg=bg_color)
-        self.main_frame.configure(bg=bg_color)
-        self.details_frame.configure(bg=bg_color)
-        self.metadata_frame.configure(bg=bg_color)
+        self.task_label.config(text=task_data['content'])
 
-        # Update all widgets with new colors
-        self.task_label.config(
-            text=task_data['content'],
-            bg=bg_color,
-            fg=text_color
-        )
+        # Compose the metadata line, skipping anything we do not have
+        parts = []
+        if task_data.get('due_time') and task_data['due_time'] != 'No time set':
+            parts.append(task_data['due_time'])
 
-        # Update spacers
-        for widget in self.main_frame.winfo_children():
-            if isinstance(widget, tk.Frame) and widget != self.details_frame:
-                widget.configure(bg=bg_color)
+        if priority in PRIORITY_NAMES:
+            parts.append(PRIORITY_NAMES[priority])
 
-        # Update time (simple text, no emoji)
-        time_text = task_data['due_time']
-        self.time_label.config(text=time_text, bg=bg_color, fg=meta_color)
+        if task_data.get('has_focus'):
+            parts.append('Focus')
 
-        # Update priority with color coding (simple text, no emoji)
-        priority_text = task_data['priority']
-        self.priority_label.config(text=priority_text, bg=bg_color, fg=meta_color)
-
-        # Show focus indicator if applicable
-        if task_data.get('has_focus', False):
-            self.focus_label.config(text="Focus Task", bg=bg_color, fg=meta_color)
-        else:
-            self.focus_label.config(text="", bg=bg_color)
-
-        # Update timestamp
-        now = datetime.now().strftime("%I:%M:%S %p")
-        self.update_label.config(text=f"Last updated: {now}", bg=bg_color, fg=meta_color)
+        self.meta_label.config(text='   ·   '.join(parts))
+        self._stamp_update_time()
 
     def show_no_tasks(self) -> None:
         """Display message when no tasks are available."""
-        self.task_label.config(text="No tasks due today!")
-        self.time_label.config(text="")
-        self.priority_label.config(text="")
-        self.focus_label.config(text="")
-
-        now = datetime.now().strftime("%I:%M:%S %p")
-        self.update_label.config(text=f"Last updated: {now}")
+        self._apply_scheme(self.theme['default'])
+        self.task_label.config(text="Nothing due today")
+        self.meta_label.config(text="You're all clear")
+        self._stamp_update_time()
 
     def show_error(self, error_message: str) -> None:
         """
@@ -187,49 +210,10 @@ class TaskDisplay:
         Args:
             error_message: Error message to display
         """
-        self.task_label.config(
-            text=f"Error: {error_message}",
-            fg='#FB4934'
-        )
-        self.time_label.config(text="")
-        self.priority_label.config(text="")
-        self.focus_label.config(text="")
-
-    def _get_background_colors(self, priority: int) -> tuple:
-        """
-        Get background, text, and metadata colors based on priority level.
-
-        Args:
-            priority: Priority level (1-4)
-
-        Returns:
-            Tuple of (background_color, text_color, metadata_color)
-        """
-        color_schemes = {
-            4: ('#FF4444', '#FFFFFF', '#FFE6E6'),  # Bright Red bg - Urgent!
-            3: ('#FFA500', '#000000', '#664200'),  # Orange bg - High
-            2: ('#4DA6FF', '#FFFFFF', '#E6F2FF'),  # Blue bg - Medium
-            1: ('#CCCCCC', '#000000', '#666666')   # Gray bg - Low
-        }
-        return color_schemes.get(priority, ('#FFD700', '#000000', '#666666'))
-
-    def _get_priority_color(self, priority: int) -> str:
-        """
-        Get color for priority level (kept for compatibility).
-
-        Args:
-            priority: Priority level (1-4)
-
-        Returns:
-            Hex color code
-        """
-        colors = {
-            4: '#CC0000',  # Dark Red - Urgent
-            3: '#CC6600',  # Dark Orange - High
-            2: '#0066CC',  # Dark Blue - Medium
-            1: '#666666'   # Gray - Low
-        }
-        return colors.get(priority, '#000000')
+        self._apply_scheme(self.theme['default'])
+        self.task_label.config(text="Can't reach TickTick")
+        self.meta_label.config(text=error_message)
+        self._stamp_update_time()
 
     def set_refresh_callback(self, callback: Callable) -> None:
         """
