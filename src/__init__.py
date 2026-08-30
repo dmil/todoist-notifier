@@ -1,1 +1,1 @@
-# Todoist Notifier Package
+# TickTick Notifier Package

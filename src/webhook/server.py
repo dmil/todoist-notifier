@@ -1,5 +1,9 @@
 """
-Flask-based webhook server for receiving real-time updates from Todoist.
+Flask-based webhook server for receiving real-time update pushes.
+
+Note: the TickTick Open API does not offer webhooks, so nothing calls this
+endpoint under the default configuration. It is retained so a self-hosted
+bridge (or a future TickTick push mechanism) can trigger an immediate refresh.
 """
 from flask import Flask, request, jsonify
 from typing import Callable, Optional
@@ -8,7 +12,7 @@ import logging
 
 
 class WebhookServer:
-    """Webhook server for receiving Todoist updates."""
+    """Webhook server for receiving task update pushes."""
 
     def __init__(self, host: str = '0.0.0.0', port: int = 5000):
         """
@@ -42,9 +46,9 @@ class WebhookServer:
         @self.app.route('/webhook', methods=['POST'])
         def webhook():
             """
-            Main webhook endpoint for Todoist events.
+            Main webhook endpoint for task events.
 
-            Todoist sends POST requests here when tasks are updated.
+            An external bridge can POST here when tasks are updated.
             """
             try:
                 data = request.get_json()
@@ -74,7 +78,7 @@ class WebhookServer:
         Determine if an event should trigger a display update.
 
         Args:
-            event_type: The Todoist event type
+            event_type: The event type
 
         Returns:
             True if update should be triggered

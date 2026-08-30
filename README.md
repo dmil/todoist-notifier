@@ -1,14 +1,12 @@
 # todoist-notifier
 
 View your most important task for today at a glance.
-An app for the Raspberry Pi connected to a small screen that shows only one todoist task.
+An app for the Raspberry Pi connected to a small screen that shows only one TickTick task.
 
 ## Features
 - Shows the most important task for today
     - It determines the most important task using priority and due date
     - Override by adding `@focus` tag to a task and have it take precedence
-- Automatically updates when tasks change using Todoist Webhooks
-- Real-time display updates via webhook integration
 - Configurable display settings for different screen sizes
 - Automatic periodic refresh (default: 5 minutes)
 
@@ -17,15 +15,15 @@ An app for the Raspberry Pi connected to a small screen that shows only one todo
 - Raspberry Pi
 - Tkinter for GUI
 - Python for backend
-- Todoist API
-- Flask for webhook server
+- TickTick Open API
+- Flask for the optional webhook receiver
 
 ## Installation
 
 ### Prerequisites
-- Python 3.7 or higher
-- Tkinter (usually comes with Python)
-- Todoist account and API token
+- Python 3.9 or higher (the client uses `zoneinfo`)
+- Tkinter (`sudo apt install python3-tk` on Raspberry Pi OS, `sudo pacman -S tk` on Arch)
+- TickTick account and API token
 
 ### Setup
 
@@ -37,8 +35,8 @@ cd todoist-notifier
 
 2. Create a virtual environment:
 ```bash
-python3 -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+python3 -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 ```
 
 3. Install dependencies:
@@ -49,13 +47,13 @@ pip install -r requirements.txt
 4. Configure your settings:
 ```bash
 cp .env.example .env
-# Edit .env and add your Todoist API token
+# Edit .env and add your TickTick API token
 ```
 
-To get your Todoist API token:
-1. Go to https://todoist.com/app/settings/integrations/developer
-2. Copy your API token
-3. Add it to your .env file
+To get your TickTick API token:
+1. Register an app at https://developer.ticktick.com/
+2. Complete the OAuth flow to obtain an access token
+3. Add it to your .env file as `TICKTICK_API_KEY`
 
 ## Usage
 
@@ -85,22 +83,37 @@ Note: Docker is particularly useful for testing on macOS where Tkinter has compa
 
 **For macOS users**: To see the GUI in Docker, you'll need to set up X11 forwarding with XQuartz. See [DOCKER_SETUP.md](DOCKER_SETUP.md) for detailed instructions.
 
+### Running the Tests
+
+```bash
+# Offline: parsing and selection logic, no API token needed
+python3 tests/test_task_selection.py
+
+# Live: verifies the API token and prints today's tasks
+python3 test_api.py
+```
+
 ### Configuration Options
 
 All configuration is done via environment variables in your `.env` file:
 
 **Required:**
-- `TODOIST_API_TOKEN` - Your Todoist API token
+- `TICKTICK_API_KEY` - Your TickTick API token
 
 **Display Settings (optional):**
 - `DISPLAY_WIDTH` - Screen width in pixels (default: 800)
 - `DISPLAY_HEIGHT` - Screen height in pixels (default: 480)
 - `DISPLAY_FULLSCREEN` - Run fullscreen: true/false (default: false)
 - `DISPLAY_FONT_SIZE` - Base font size (default: 24)
+- `DISPLAY_COLOR_OPACITY` - Strength of the priority background colours, 0 to 1 (default: 0.75). 1 is the full-strength colour; lower values mix it towards white.
 - `REFRESH_INTERVAL` - Auto-refresh interval in seconds (default: 300)
 
 **Webhook Settings (optional):**
 - `WEBHOOK_ENABLED` - Enable webhook server: true/false (default: false)
+
+The TickTick Open API does not support webhooks, so the display refreshes by
+polling on `REFRESH_INTERVAL`. The `/webhook` endpoint is retained only for a
+self-hosted bridge that can POST to it to force an immediate refresh.
 - `WEBHOOK_HOST` - Webhook server host (default: 0.0.0.0)
 - `WEBHOOK_PORT` - Webhook server port (default: 5000)
 
@@ -108,19 +121,6 @@ All configuration is done via environment variables in your `.env` file:
 - `FOCUS_TAG` - Label to override task selection (default: @focus)
 
 Note: Set `WEBHOOK_ENABLED=false` if you're on university/restricted networks where you can't open ports.
-
-### Setting Up Webhooks
-
-To receive real-time updates from Todoist:
-
-1. Start the application (webhook server runs automatically)
-2. Make your webhook endpoint publicly accessible:
-   - For development: Use ngrok or similar tunnel service
-   - For production: Set up port forwarding on your router
-
-3. Configure the webhook in Todoist:
-   - Go to Todoist App Settings > Integrations
-   - Add your webhook URL: `http://your-ip:5000/webhook`
 
 ### Keyboard Shortcuts
 
@@ -134,9 +134,11 @@ todoist-notifier/
 ├── main.py                 # Main application entry point
 ├── requirements.txt        # Python dependencies
 ├── .env                    # Your configuration (create from .env.example)
+├── tests/
+│   └── test_task_selection.py   # Offline tests (no token required)
 └── src/
     ├── api/
-    │   └── todoist_client.py    # Todoist API wrapper
+    │   └── ticktick_client.py   # TickTick API wrapper
     ├── gui/
     │   └── display.py           # Tkinter GUI display
     ├── logic/
@@ -152,7 +154,15 @@ The app selects the most important task using this priority:
 
 1. **@focus tag override**: Any task tagged with `@focus` (or your custom focus tag) will be displayed first
 2. **Priority level**: Higher priority tasks (P1 > P2 > P3 > P4) are preferred
-3. **Due time**: If priorities are equal, earlier due times take precedence
+3. **Due time**: If priorities are equal, earlier due times take precedence. All-day
+   tasks sort after timed ones, and task ID breaks any remaining tie so the same
+   task list always yields the same choice.
+
+Only tasks due **today** are considered; overdue and undated tasks are ignored.
+
+TickTick's priorities (None/Low/Medium/High) are mapped onto the P4-P1 scale
+used by the display: High is P1 (red), Medium is P2 (orange), Low is P3 (blue),
+and None is P4 (grey).
 
 ## Running on Raspberry Pi
 
@@ -168,7 +178,7 @@ sudo nano /etc/systemd/system/todoist-notifier.service
 2. Add the following content:
 ```ini
 [Unit]
-Description=Todoist Notifier Display
+Description=TickTick Notifier Display
 After=network.target
 
 [Service]
@@ -176,11 +186,13 @@ Type=simple
 User=pi
 WorkingDirectory=/home/pi/todoist-notifier
 Environment="DISPLAY=:0"
-ExecStart=/home/pi/todoist-notifier/venv/bin/python3 /home/pi/todoist-notifier/main.py
+Environment="XAUTHORITY=/home/pi/.Xauthority"
+ExecStart=/home/pi/todoist-notifier/.venv/bin/python3 /home/pi/todoist-notifier/main.py
 Restart=always
+RestartSec=10
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=graphical.target
 ```
 
 3. Enable and start the service:
@@ -192,14 +204,9 @@ sudo systemctl start todoist-notifier
 ## Troubleshooting
 
 **No tasks displayed:**
-- Check that you have tasks due today in Todoist
-- Verify your API token is correct
+- Check that you have tasks due today in TickTick
+- Verify your API token is correct (an expired token reports a 401)
 - Check console for error messages
-
-**Webhook not receiving updates:**
-- Ensure webhook server is running (check console output)
-- Verify your webhook URL is publicly accessible
-- Check Todoist webhook configuration
 
 **Display issues on Raspberry Pi:**
 - Adjust `width`, `height`, and `font_size` in config
