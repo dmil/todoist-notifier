@@ -1,9 +1,20 @@
 """
 Task selection logic to determine the most important task to display.
 """
+import re
 from typing import Optional, List
 from api.ticktick_client import Task
 from datetime import datetime
+
+
+# Markdown link syntax, e.g. "see [docs](https://x.com)" -> "see docs".
+# On a small display the raw URL is noise, so keep only the link text.
+_LINK_RE = re.compile(r'\[([^\]]*)\]\([^)]*\)')
+
+
+def clean_markdown(text: str) -> str:
+    """Strip Markdown link URLs, keeping just the link text."""
+    return _LINK_RE.sub(r'\1', text or "")
 
 
 class TaskSelector:
@@ -153,12 +164,12 @@ class TaskSelector:
 
         return {
             "id": task.id,
-            "content": task.content,
+            "content": clean_markdown(task.content),
             "due_time": due_time_str,
             "priority": priority_text,
             "priority_level": task.priority,
             "project_id": task.project_id,
             "labels": task.labels or [],
-            "description": task.description or "",
+            "description": clean_markdown(task.description),
             "has_focus": self.focus_tag.replace("@", "") in (task.labels or [])
         }

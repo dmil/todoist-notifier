@@ -150,5 +150,14 @@ check('shows the real due time', formatted['due_time'], '9:00 AM')
 formatted = selector.format_task_for_display(allday_task)
 check('all-day task shows no clock time', formatted['due_time'], 'Today')
 
+# Markdown link URLs are stripped, keeping only the link text
+md = selector.format_task_for_display(
+    client._parse_task(raw_task(title='see [docs](https://example.com/x)')))
+check('markdown link keeps its text', md['content'], 'see docs')
+
+md = selector.format_task_for_display(
+    client._parse_task(raw_task(content='read [the guide](http://g.io) now')))
+check('markdown link stripped from description', md['description'], 'read the guide now')
+
 print(f"\n{sum(_results)}/{len(_results)} passed")
 sys.exit(0 if all(_results) else 1)
